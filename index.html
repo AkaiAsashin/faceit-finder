@@ -77,27 +77,53 @@
                 document.getElementById('spielerName').innerText = data.nickname;
                 document.getElementById('profilBild').src = data.avatar || 'https://via.placeholder.com/80';
                 
-                // 2. Steam-Daten eintragen
-                document.getElementById('steamStatus').innerText = data.isPublic;
-                document.getElementById('accountErstellt').innerText = data.accountCreated;
-                document.getElementById('gesamtStunden').innerText = data.cs2TotalHours + " Std.";
-                document.getElementById('wochenStunden').innerText = data.cs2RecentHours + " Std.";
+                // --- 2. STEAM-DATEN EINTRAGEN & EINFÄRBEN ---
+                
+                // Profil-Status
+                const statusEl = document.getElementById('steamStatus');
+                statusEl.innerText = data.isPublic;
+                statusEl.style.color = (data.isPublic === "Public") ? "#00e676" : "#ff4d4d";
 
-                // Logik für gebannte Freunde
-                if (data.friendsVisible && data.totalFriends > 0) {
-                    // Zeigt an: "12 / 150 (8%)"
-                    document.getElementById('bannedFriends').innerText = `${data.bannedFriends} / ${data.totalFriends} (${data.bannedPercentage}%)`;
+                // Account Erstelldatum (Weniger als 1 Jahr = Rot)
+                const createdEl = document.getElementById('accountErstellt');
+                createdEl.innerText = data.accountCreated;
+                if (data.accountCreated !== "Unbekannt") {
+                    // Wir zerlegen "DD.MM.YYYY" um ein echtes Datum daraus zu machen
+                    const parts = data.accountCreated.split('.');
+                    const creationDate = new Date(parts[2], parts[1] - 1, parts[0]);
                     
-                    // Optional: Mach die Zahl rot, wenn mehr als 5% gebannt sind!
-                    if (data.bannedPercentage >= 5) {
-                        document.getElementById('bannedFriends').style.color = "#ff4444";
-                    } else {
-                        document.getElementById('bannedFriends').style.color = "white"; // Reset
-                    }
-                } else if (!data.friendsVisible) {
-                    document.getElementById('bannedFriends').innerText = "Privat";
+                    // Datum von genau heute vor 1 Jahr berechnen
+                    const einJahrZurueck = new Date();
+                    einJahrZurueck.setFullYear(einJahrZurueck.getFullYear() - 1);
+                    
+                    // Ist der Account jünger als 1 Jahr?
+                    createdEl.style.color = (creationDate > einJahrZurueck) ? "#ff4d4d" : "#00e676";
                 } else {
-                    document.getElementById('bannedFriends').innerText = "0 Freunde";
+                    createdEl.style.color = "#ff4d4d"; // Privat/Unbekannt machen wir direkt Rot
+                }
+
+                // CS2 Gesamtzeit (< 500h = Rot)
+                const gesamtStundenEl = document.getElementById('gesamtStunden');
+                gesamtStundenEl.innerText = data.cs2TotalHours + " Std.";
+                gesamtStundenEl.style.color = (data.cs2TotalHours < 500) ? "#ff4d4d" : "#00e676";
+
+                // CS2 Letzte 2 Wochen (< 1h = Rot)
+                const wochenStundenEl = document.getElementById('wochenStunden');
+                wochenStundenEl.innerText = data.cs2RecentHours + " Std.";
+                wochenStundenEl.style.color = (data.cs2RecentHours < 1) ? "#ff4d4d" : "#00e676";
+
+                // Gebannte Freunde (Mindestens 1 Bann = Rot)
+                const bannedEl = document.getElementById('bannedFriends');
+                if (data.friendsVisible && data.totalFriends > 0) {
+                    bannedEl.innerText = `${data.bannedFriends} / ${data.totalFriends} (${data.bannedPercentage}%)`;
+                    // Sobald gebannte Freunde > 0 sind -> Rot, ansonsten Grün
+                    bannedEl.style.color = (data.bannedFriends > 0) ? "#ff4d4d" : "#00e676";
+                } else if (!data.friendsVisible) {
+                    bannedEl.innerText = "Privat";
+                    bannedEl.style.color = "#ff4d4d"; // Liste versteckt = Suspekt = Rot
+                } else {
+                    bannedEl.innerText = "0 Freunde";
+                    bannedEl.style.color = "#00e676"; // 0 Freunde = Niemand gebannt = Grün
                 }
 
                 // 3. Faceit-Daten eintragen (falls vorhanden)
@@ -117,6 +143,16 @@
                 alert("Verbindungsfehler zum Backend. Läuft dein Node-Server?");
             }
         }
+    // Lauscher für die Enter-Taste hinzufügen
+        document.getElementById('steamIdInput').addEventListener('keypress', function(event) {
+            // Prüfen, ob die gedrückte Taste "Enter" war
+            if (event.key === 'Enter') {
+                // Das Standardverhalten (z.B. Formular absenden) verhindern
+                event.preventDefault(); 
+                // Unsere Suchfunktion aufrufen
+                sucheSpieler();
+            }
+        });
     </script>
 </body>
 </html>
