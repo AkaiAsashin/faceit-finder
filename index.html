@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Faceit Account Finder</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #1a1a1a; color: white; }
+        input { padding: 10px; width: 250px; background: #333; border: 1px solid #555; color: white; border-radius: 4px; }
+        button { padding: 10px 15px; background: #ff5500; border: none; color: white; font-weight: bold; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #e04c00; }
+        
+        .kachel { background: #2a2a2a; padding: 25px; margin-top: 20px; border-radius: 8px; max-width: 400px; display: none; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        .header-bereich { display: flex; align-items: center; margin-bottom: 20px; }
+        img { width: 80px; height: 80px; border-radius: 50%; margin-right: 15px; border: 2px solid #ff5500; }
+        h2 { margin: 0; font-size: 24px; }
+        
+        .sektion { border-top: 1px solid #444; margin-top: 15px; padding-top: 15px; }
+        .sektion-titel { font-size: 12px; text-transform: uppercase; color: #888; font-weight: bold; margin-bottom: 10px; letter-spacing: 1px; }
+        
+        .stat-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px; }
+        .stat-value { font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <h1>Faceit Account Finder</h1>
+    <p style="color: #888;">Enter URL/steam64/steamid:</p>
+    <input type="text" id="steamIdInput" placeholder="Z.B. 76561198000000000..." />
+    <button onclick="sucheSpieler()">Suchen</button>
+
+    <!-- DIE PROFIL KACHEL -->
+    <div id="profilKachel" class="kachel">
+        
+        <!-- Oben: Bild und Name -->
+        <div class="header-bereich">
+            <img id="profilBild" src="" alt="Avatar">
+            <h2 id="spielerName">Name</h2>
+        </div>
+
+        <!-- Mitte: Steam Informationen -->
+        <div class="sektion">
+            <div class="sektion-titel">Steam Account Informationen</div>
+            <div class="stat-row"><span>Profil-Status:</span> <span id="steamStatus" class="stat-value">-</span></div>
+            <div class="stat-row"><span>Erstellt am:</span> <span id="accountErstellt" class="stat-value">-</span></div>
+            <div class="stat-row"><span>CS2 Gesamtzeit:</span> <span id="gesamtStunden" class="stat-value">-</span></div>
+            <div class="stat-row"><span>Letzte 2 Wochen:</span> <span id="wochenStunden" class="stat-value">-</span></div>
+            <div class="stat-row"><span>Gebannte Freunde:</span> <span id="bannedFriends" class="stat-value">-</span></div>
+        </div>
+
+        <!-- Unten: Faceit Informationen -->
+        <div class="sektion">
+            <div class="sektion-titel">Faceit Informationen</div>
+            <div class="stat-row"><span>Faceit Level:</span> <span id="spielerLevel" class="stat-value">-</span></div>
+            <div class="stat-row"><span>Faceit Elo:</span> <span id="spielerElo" class="stat-value">-</span></div>
+        </div>
+
+    </div>
+
+    <script>
+        async function sucheSpieler() {
+            const id = document.getElementById('steamIdInput').value.trim();
+            const kachel = document.getElementById('profilKachel');
+            
+            if (!id) return alert("Bitte eine gültige ID eingeben!");
+
+            try {
+                // Wir fragen unseren neuen, kombinierten Backend-Endpunkt ab!
+                const response = await fetch(`http://localhost:3000/api/player-details/${encodeURIComponent(id)}`);
+                const data = await response.json();
+
+                if (data.error) {
+                    alert("Fehler: " + data.error);
+                    return;
+                }
+
+                // 1. Basis-Daten eintragen
+                document.getElementById('spielerName').innerText = data.nickname;
+                document.getElementById('profilBild').src = data.avatar || 'https://via.placeholder.com/80';
+                
+                // 2. Steam-Daten eintragen
+                document.getElementById('steamStatus').innerText = data.isPublic;
+                document.getElementById('accountErstellt').innerText = data.accountCreated;
+                document.getElementById('gesamtStunden').innerText = data.cs2TotalHours + " Std.";
+                document.getElementById('wochenStunden').innerText = data.cs2RecentHours + " Std.";
+
+                // Logik für gebannte Freunde
+                if (data.friendsVisible && data.totalFriends > 0) {
+                    // Zeigt an: "12 / 150 (8%)"
+                    document.getElementById('bannedFriends').innerText = `${data.bannedFriends} / ${data.totalFriends} (${data.bannedPercentage}%)`;
+                    
+                    // Optional: Mach die Zahl rot, wenn mehr als 5% gebannt sind!
+                    if (data.bannedPercentage >= 5) {
+                        document.getElementById('bannedFriends').style.color = "#ff4444";
+                    } else {
+                        document.getElementById('bannedFriends').style.color = "white"; // Reset
+                    }
+                } else if (!data.friendsVisible) {
+                    document.getElementById('bannedFriends').innerText = "Privat";
+                } else {
+                    document.getElementById('bannedFriends').innerText = "0 Freunde";
+                }
+
+                // 3. Faceit-Daten eintragen (falls vorhanden)
+                if (data.hasFaceit) {
+                    document.getElementById('spielerLevel').innerText = data.faceit.level;
+                    document.getElementById('spielerElo').innerText = data.faceit.elo;
+                } else {
+                    document.getElementById('spielerLevel').innerText = "Kein Profil";
+                    document.getElementById('spielerElo').innerText = "Kein Profil";
+                }
+
+                // Kachel einblenden
+                kachel.style.display = 'block';
+
+            } catch (err) {
+                console.error(err);
+                alert("Verbindungsfehler zum Backend. Läuft dein Node-Server?");
+            }
+        }
+    </script>
+</body>
+</html>
