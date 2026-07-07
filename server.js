@@ -1,10 +1,13 @@
 require('dotenv').config();
+const path = require('path');
 const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
 
 const app = express();
 app.use(cors());
+// Sagt Express, dass es die Dateien aus dem "public" Ordner als Website anzeigen soll
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Unser eigener API-Endpunkt
 app.get('/api/player-details/:userInput', async (req, res) => {

@@ -27,7 +27,7 @@ async function parseAndFetch() {
 
 async function ladeSpieler(id) {
     try {
-        const response = await fetch(`http://localhost:3000/api/player-details/${encodeURIComponent(id)}`);
+        const response = await fetch(`/api/player-details/${encodeURIComponent(id)}`);
         const data = await response.json();
 
         if (data.error) {
