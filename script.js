@@ -1,4 +1,4 @@
-// Listener für Button und Enter-Taste
+// Listener for Button and Enter key
 document.getElementById('searchButton').addEventListener('click', parseAndFetch);
 document.getElementById('steamIdInput').addEventListener('keypress', function(event) {
     if (event.key === 'Enter') {
@@ -7,19 +7,19 @@ document.getElementById('steamIdInput').addEventListener('keypress', function(ev
     }
 });
 
-// Nimmt den Input, trennt ihn am Semikolon und lädt die Spieler
+// Takes input, splits by semicolon, and fetches players
 async function parseAndFetch() {
     const inputField = document.getElementById('steamIdInput');
     const rawInput = inputField.value;
-    if (!rawInput.trim()) return alert("Bitte eine ID oder einen Link eingeben!");
+    if (!rawInput.trim()) return alert("Please enter an ID or a link!");
 
-    // Am Semikolon splitten und leere Einträge herausfiltern
+    // Split at semicolon and filter empty entries
     const inputs = rawInput.split(';').map(i => i.trim()).filter(i => i !== "");
     
-    // Eingabefeld leeren für den nächsten Suchvorgang
+    // Clear input field for next search
     inputField.value = "";
 
-    // Jeden Spieler nacheinander abfragen
+    // Fetch each player sequentially
     for (const input of inputs) {
         await ladeSpieler(input);
     }
@@ -31,57 +31,71 @@ async function ladeSpieler(id) {
         const data = await response.json();
 
         if (data.error) {
-            console.error(`Fehler bei ${id}: ${data.error}`);
-            return; // Wir werfen keinen Alert mehr, um den Flow bei mehreren Suchen nicht zu stören
+            console.error(`Error with ${id}: ${data.error}`);
+            return;
         }
 
         baueKachel(data);
     } catch (err) {
-        console.error("Netzwerkfehler:", err);
+        console.error("Network error:", err);
     }
 }
 
 function baueKachel(data) {
     const container = document.getElementById('kachelContainer');
 
-    // LIMIT CHECK: Bulletproof mit while-Schleife. 
-    // Wir machen so lange Platz, bis maximal noch 9 Kacheln da sind, 
-    // damit die neue Kachel exakt Nummer 10 wird.
+    // LIMIT CHECK: Make room until max 9 tiles are left, so the new one is exactly #10
     while (container.children.length >= 10) {
         container.removeChild(container.firstChild);
     }
 
-    // --- FARBEN & LOGIK BERECHNEN ---
+    // --- LOGIC & COLORS ---
+    const isPublic = data.isPublic === "Public";
+    const isPublicColor = isPublic ? "#00e676" : "#ff4d4d";
     
-    const isPublicColor = (data.isPublic === "Public") ? "#00e676" : "#ff4d4d";
-    
-    // ... hier geht dein restlicher Code ganz normal weiter ...
-    
+    // Variables for display texts and colors
+    let accountAgeText = data.accountCreated;
     let accountAgeColor = "#ff4d4d";
-    if (data.accountCreated !== "Unbekannt") {
-        const parts = data.accountCreated.split('.');
-        const creationDate = new Date(parts[2], parts[1] - 1, parts[0]);
-        const einJahrZurueck = new Date();
-        einJahrZurueck.setFullYear(einJahrZurueck.getFullYear() - 1);
-        accountAgeColor = (creationDate > einJahrZurueck) ? "#ff4d4d" : "#00e676";
+    let totalHoursText = (data.cs2TotalHours === "Private") ? "Private" : data.cs2TotalHours + " hrs";
+    let totalHoursColor = (data.cs2TotalHours === "Private" || data.cs2TotalHours < 500) ? "#ff4d4d" : "#00e676";
+    let recentHoursText = (data.cs2RecentHours === "Private") ? "Private" : data.cs2RecentHours + " hrs";
+    let recentHoursColor = (data.cs2RecentHours === "Private" || data.cs2RecentHours < 2) ? "#ff4d4d" : "#00e676";
+
+    // If account is private, overwrite everything with "Private" in red
+    if (!isPublic) {
+        accountAgeText = "Private";
+        accountAgeColor = "#ff4d4d";
+        totalHoursText = "Private";
+        totalHoursColor = "#ff4d4d";
+        recentHoursText = "Private";
+        recentHoursColor = "#ff4d4d";
+    } else {
+        // Calculate age color only if public and known
+        if (data.accountCreated !== "Unbekannt" && data.accountCreated !== "Unknown") {
+            const parts = data.accountCreated.split('.');
+            const creationDate = new Date(parts[2], parts[1] - 1, parts[0]);
+            const oneYearAgo = new Date();
+            oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+            accountAgeColor = (creationDate > oneYearAgo) ? "#ff4d4d" : "#00e676";
+        } else {
+            accountAgeText = "Unknown";
+        }
     }
 
-    const totalHoursColor = (data.cs2TotalHours < 500) ? "#ff4d4d" : "#00e676";
-    const recentHoursColor = (data.cs2RecentHours < 1) ? "#ff4d4d" : "#00e676";
-
-    let friendsText = "0 Freunde";
+    // Banned friends logic
+    let friendsText = "0 friends";
     let friendsColor = "#00e676";
     if (data.friendsVisible && data.totalFriends > 0) {
         friendsText = `${data.bannedFriends} / ${data.totalFriends} (${data.bannedPercentage}%)`;
         friendsColor = (data.bannedFriends > 0) ? "#ff4d4d" : "#00e676";
     } else if (!data.friendsVisible) {
-        friendsText = "Privat";
+        friendsText = "Private";
         friendsColor = "#ff4d4d";
     }
 
-    // Faceit Logik
+    // Faceit logic
     let faceitLevel = "-";
-    let faceitElo = "Kein Faceit";
+    let faceitElo = "No Faceit";
     let faceitBgColor = "#444";
     let faceitTextColor = "#fff";
     let bannerStyle = "display: none;";
@@ -102,7 +116,7 @@ function baueKachel(data) {
         }
     }
 
-    // --- KACHEL ERSCHAFFEN ---
+    // --- CREATE TILE ---
     const kachel = document.createElement('div');
     kachel.className = 'kachel';
     kachel.innerHTML = `
@@ -112,18 +126,18 @@ function baueKachel(data) {
         </div>
 
         <div class="sektion">
-            <div class="sektion-titel">Steam Account Infos</div>
-            <div class="stat-row"><span>Profil-Status:</span> <span class="stat-value" style="color: ${isPublicColor}">${data.isPublic}</span></div>
-            <div class="stat-row"><span>Erstellt am:</span> <span class="stat-value" style="color: ${accountAgeColor}">${data.accountCreated}</span></div>
-            <div class="stat-row"><span>CS2 Gesamtzeit:</span> <span class="stat-value" style="color: ${totalHoursColor}">${data.cs2TotalHours} Std.</span></div>
-            <div class="stat-row"><span>Letzte 2 Wochen:</span> <span class="stat-value" style="color: ${recentHoursColor}">${data.cs2RecentHours} Std.</span></div>
-            <div class="stat-row"><span>Gebannte Freunde:</span> <span class="stat-value" style="color: ${friendsColor}">${friendsText}</span></div>
+            <div class="sektion-titel">Steam Account Info</div>
+            <div class="stat-row"><span>Profile Status:</span> <span class="stat-value" style="color: ${isPublicColor}">${data.isPublic}</span></div>
+            <div class="stat-row"><span>Created on:</span> <span class="stat-value" style="color: ${accountAgeColor}">${accountAgeText}</span></div>
+            <div class="stat-row"><span>CS2 Total Time:</span> <span class="stat-value" style="color: ${totalHoursColor}">${totalHoursText}</span></div>
+            <div class="stat-row"><span>Last 2 Weeks:</span> <span class="stat-value" style="color: ${recentHoursColor}">${recentHoursText}</span></div>
+            <div class="stat-row"><span>Banned Friends:</span> <span class="stat-value" style="color: ${friendsColor}">${friendsText}</span></div>
         </div>
 
         <div class="faceit-sektion">
             <div class="faceit-bg" style="${bannerStyle}"></div>
             <div class="faceit-content">
-                <div class="sektion-titel" style="text-align: center; border-bottom: none;">Faceit Infos</div>
+                <div class="sektion-titel" style="text-align: center; border-bottom: none;">Faceit Info</div>
                 <div class="faceit-center-box">
                     <div class="faceit-icon" style="background-color: ${faceitBgColor}; color: ${faceitTextColor};">${faceitLevel}</div>
                     <div class="faceit-elo"><span>${faceitElo}</span> ELO</div>
@@ -132,6 +146,6 @@ function baueKachel(data) {
         </div>
     `;
 
-    // Kachel an das Ende des Containers anfügen
+    // Append tile to the container
     container.appendChild(kachel);
 }

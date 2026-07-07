@@ -76,14 +76,23 @@ app.get('/api/player-details/:userInput', async (req, res) => {
     }
 
     // 3. STEAM SPIELZEIT HOLEN
+    let gamesVisible = false;
     try {
-        const steamGamesRes = await axios.get(`https://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key=${steamKey}&steamid=${steamId}&format=json`);
-        steamGames = steamGamesRes.data.response.games || [];
-    } catch (err) {
-        console.error("Fehler bei Steam-Spielzeit (Profil eventuell privat)", err.message);
-    }
+        // Wir haben &include_appinfo=1 hinzugefügt, das zwingt Steam oft, genauer zu antworten
+        const steamGamesRes = await axios.get(`https://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key=${steamKey}&steamid=${steamId}&format=json&include_played_free_games=1&include_appinfo=1`);
+        
+        const responseData = steamGamesRes.data.response;
 
-    // ... [Dein bisheriger Code für Faceit, Summary und Games] ...
+        if (responseData && responseData.game_count !== undefined) {
+            steamGames = responseData.games || [];
+            gamesVisible = true;
+        } else {
+            steamGames = [];
+        }
+    } catch (err) {
+        console.error("Fehler bei Steam-Spielzeit", err.message);
+        steamGames = [];
+    }
 
     // 4. STEAM FREUNDE & BANS HOLEN
     let totalFriends = 0;
@@ -140,15 +149,24 @@ app.get('/api/player-details/:userInput', async (req, res) => {
         return res.status(404).json({ error: "Steam-Spieler nicht gefunden" });
     }
 
+    // HACK: Wir prüfen, ob der User das "Spielzeit verstecken" Häkchen gesetzt hat.
+    // Wenn er Spiele hat, aber die Summe ALLER Spielzeiten exakt 0 ist, ist es versteckt!
+    let isPlaytimeHidden = false;
+    if (gamesVisible && steamGames.length > 0) {
+        const totalPlaytimeAllGames = steamGames.reduce((sum, game) => sum + (game.playtime_forever || 0), 0);
+        if (totalPlaytimeAllGames === 0) {
+            isPlaytimeHidden = true;
+        }
+    }
+
     // CS2 Spielzeit filtern (AppID 730)
     const cs2Game = steamGames.find(g => g.appid === 730);
     const totalHours = cs2Game ? Math.round(cs2Game.playtime_forever / 60) : 0;
     const recentHours = cs2Game && cs2Game.playtime_2weeks ? Math.round(cs2Game.playtime_2weeks / 60) : 0;
 
-    // Erstellungsdatum lesbar machen
     const createdDate = steamSummary.timecreated 
         ? new Date(steamSummary.timecreated * 1000).toLocaleDateString('de-DE') 
-        : "Unbekannt";
+        : "Unknown";
 
     const responsePayload = {
         // Steam Infos
@@ -156,8 +174,10 @@ app.get('/api/player-details/:userInput', async (req, res) => {
         avatar: steamSummary.avatarfull,
         isPublic: steamSummary.communityvisibilitystate === 3 ? "Public" : "Private",
         accountCreated: createdDate,
-        cs2TotalHours: totalHours,
-        cs2RecentHours: recentHours,
+        
+        // Wenn die Spieleliste privat ist ODER das Playtime-Häkchen gesetzt ist -> "Private" ausgeben!
+        cs2TotalHours: (!gamesVisible || isPlaytimeHidden) ? "Private" : totalHours,
+        cs2RecentHours: (!gamesVisible || isPlaytimeHidden) ? "Private" : recentHours,
         friendsVisible: friendsVisible,
         totalFriends: totalFriends,
         bannedFriends: bannedFriends,
