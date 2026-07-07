@@ -79,6 +79,24 @@ button:hover {
     margin-bottom: 20px; 
 }
 
+/* Container für Logo und Titel (nebeneinander und mittig) */
+.header-title {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px; /* Abstand zwischen Logo und Text */
+    margin-bottom: 10px;
+}
+
+/* Das Logo selbst */
+.main-logo {
+    width: 60px; /* Hier kannst du die Größe anpassen */
+    height: 60px;
+    border-radius: 12px; /* Macht die Ecken leicht rund - sieht moderner aus */
+    object-fit: cover;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5); /* Schicker Schatten */
+}
+
 .avatar { 
     width: 80px; 
     height: 80px; 
