@@ -1,0 +1,172 @@
+/* Grund-Design */
+body { 
+    font-family: Arial, sans-serif; 
+    padding: 20px; 
+    background: #1a1a1a; 
+    color: white; 
+    margin: 0;
+}
+
+/* Suchfeld und Header zentrieren */
+.search-container {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.search-container p {
+    color: #888;
+    margin-bottom: 15px;
+}
+
+.input-group {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+}
+
+input { 
+    padding: 12px; 
+    width: 400px; 
+    max-width: 70vw;
+    background: #333; 
+    border: 1px solid #555; 
+    color: white; 
+    border-radius: 4px; 
+    font-size: 16px;
+}
+
+button { 
+    padding: 12px 20px; 
+    background: #ff5500; 
+    border: none; 
+    color: white; 
+    font-weight: bold; 
+    border-radius: 4px; 
+    cursor: pointer; 
+    font-size: 16px;
+    transition: background 0.2s;
+}
+
+button:hover { 
+    background: #e04c00; 
+}
+
+/* Kachel-Grid (Responsiv & Zentriert) */
+.kachel-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 25px;
+    max-width: 1450px; /* Erweitert, damit 4 Kacheln bequem reinpassen */
+    margin: 0 auto;
+}
+
+/* Einzelne Kachel */
+.kachel { 
+    box-sizing: border-box; /* WICHTIG: Verhindert, dass Padding die Box breiter macht */
+    background: #2a2a2a; 
+    padding: 25px; 
+    border-radius: 8px; 
+    width: 320px; /* Feste, garantierte Breite */
+    box-shadow: 0 4px 10px rgba(0,0,0,0.4); 
+    display: flex;
+    flex-direction: column;
+}
+
+.header-bereich { 
+    display: flex; 
+    align-items: center; 
+    margin-bottom: 20px; 
+}
+
+.avatar { 
+    width: 80px; 
+    height: 80px; 
+    border-radius: 50%; 
+    margin-right: 15px; 
+    border: 2px solid #ff5500; 
+}
+
+h2 { 
+    margin: 0; 
+    font-size: 20px; 
+    word-break: break-all; /* Verhindert, dass lange Namen die Kachel sprengen */
+}
+
+.sektion { 
+    border-top: 1px solid #444; 
+    margin-top: 15px; 
+    padding-top: 15px; 
+}
+
+.sektion-titel { 
+    font-size: 12px; 
+    text-transform: uppercase; 
+    color: #888; 
+    font-weight: bold; 
+    margin-bottom: 10px; 
+    letter-spacing: 1px; 
+}
+
+.stat-row { 
+    display: flex; 
+    justify-content: space-between; 
+    margin-bottom: 8px; 
+    font-size: 14px; 
+}
+
+.stat-value { 
+    font-weight: bold; 
+}
+
+/* Faceit Sektion (Banner & Icon) */
+.faceit-sektion {
+    position: relative;
+    overflow: hidden;
+    border-radius: 6px;
+    margin-top: auto; /* Drückt die Faceit-Sektion immer ans Ende der Kachel */
+    padding: 15px;
+    border: 1px solid #444;
+}
+
+.faceit-bg {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-size: cover;
+    background-position: center;
+    opacity: 0.15;
+    z-index: 1;
+}
+
+.faceit-content {
+    position: relative;
+    z-index: 2;
+}
+
+.faceit-center-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin-top: 15px;
+    margin-bottom: 5px;
+}
+
+.faceit-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 900;
+    font-size: 22px;
+    margin-bottom: 8px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.5);
+}
+
+.faceit-elo {
+    font-size: 20px;
+    font-weight: bold;
+    color: #ddd;
+}

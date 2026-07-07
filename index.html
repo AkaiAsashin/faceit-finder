@@ -2,157 +2,24 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <title>Faceit Account Finder</title>
-    <style>
-        body { font-family: Arial, sans-serif; padding: 20px; background: #1a1a1a; color: white; }
-        input { padding: 10px; width: 250px; background: #333; border: 1px solid #555; color: white; border-radius: 4px; }
-        button { padding: 10px 15px; background: #ff5500; border: none; color: white; font-weight: bold; border-radius: 4px; cursor: pointer; }
-        button:hover { background: #e04c00; }
-        
-        .kachel { background: #2a2a2a; padding: 25px; margin-top: 20px; border-radius: 8px; max-width: 400px; display: none; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
-        .header-bereich { display: flex; align-items: center; margin-bottom: 20px; }
-        img { width: 80px; height: 80px; border-radius: 50%; margin-right: 15px; border: 2px solid #ff5500; }
-        h2 { margin: 0; font-size: 24px; }
-        
-        .sektion { border-top: 1px solid #444; margin-top: 15px; padding-top: 15px; }
-        .sektion-titel { font-size: 12px; text-transform: uppercase; color: #888; font-weight: bold; margin-bottom: 10px; letter-spacing: 1px; }
-        
-        .stat-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px; }
-        .stat-value { font-weight: bold; }
-    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Faceit & Steam Lobby Finder</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <h1>Faceit Account Finder</h1>
-    <p style="color: #888;">Enter URL/steam64/steamid:</p>
-    <input type="text" id="steamIdInput" placeholder="Z.B. 76561198000000000..." />
-    <button onclick="sucheSpieler()">Suchen</button>
-
-    <!-- DIE PROFIL KACHEL -->
-    <div id="profilKachel" class="kachel">
-        
-        <!-- Oben: Bild und Name -->
-        <div class="header-bereich">
-            <img id="profilBild" src="" alt="Avatar">
-            <h2 id="spielerName">Name</h2>
+    <div class="search-container">
+        <h1>Faceit & Steam Lobby Finder</h1>
+        <p>Links oder IDs eingeben (mehrere mit Semikolon ';' trennen):</p>
+        <div class="input-group">
+            <input type="text" id="steamIdInput" placeholder="Z.B. 76561198... ; KastenBrot ; https://..." />
+            <button id="searchButton">Suchen</button>
         </div>
-
-        <!-- Mitte: Steam Informationen -->
-        <div class="sektion">
-            <div class="sektion-titel">Steam Account Informationen</div>
-            <div class="stat-row"><span>Profil-Status:</span> <span id="steamStatus" class="stat-value">-</span></div>
-            <div class="stat-row"><span>Erstellt am:</span> <span id="accountErstellt" class="stat-value">-</span></div>
-            <div class="stat-row"><span>CS2 Gesamtzeit:</span> <span id="gesamtStunden" class="stat-value">-</span></div>
-            <div class="stat-row"><span>Letzte 2 Wochen:</span> <span id="wochenStunden" class="stat-value">-</span></div>
-            <div class="stat-row"><span>Gebannte Freunde:</span> <span id="bannedFriends" class="stat-value">-</span></div>
-        </div>
-
-        <!-- Unten: Faceit Informationen -->
-        <div class="sektion">
-            <div class="sektion-titel">Faceit Informationen</div>
-            <div class="stat-row"><span>Faceit Level:</span> <span id="spielerLevel" class="stat-value">-</span></div>
-            <div class="stat-row"><span>Faceit Elo:</span> <span id="spielerElo" class="stat-value">-</span></div>
-        </div>
-
     </div>
 
-    <script>
-        async function sucheSpieler() {
-            const id = document.getElementById('steamIdInput').value.trim();
-            const kachel = document.getElementById('profilKachel');
-            
-            if (!id) return alert("Bitte eine gültige ID eingeben!");
+    <div id="kachelContainer" class="kachel-container">
+        </div>
 
-            try {
-                // Wir fragen unseren neuen, kombinierten Backend-Endpunkt ab!
-                const response = await fetch(`http://localhost:3000/api/player-details/${encodeURIComponent(id)}`);
-                const data = await response.json();
-
-                if (data.error) {
-                    alert("Fehler: " + data.error);
-                    return;
-                }
-
-                // 1. Basis-Daten eintragen
-                document.getElementById('spielerName').innerText = data.nickname;
-                document.getElementById('profilBild').src = data.avatar || 'https://via.placeholder.com/80';
-                
-                // --- 2. STEAM-DATEN EINTRAGEN & EINFÄRBEN ---
-                
-                // Profil-Status
-                const statusEl = document.getElementById('steamStatus');
-                statusEl.innerText = data.isPublic;
-                statusEl.style.color = (data.isPublic === "Public") ? "#00e676" : "#ff4d4d";
-
-                // Account Erstelldatum (Weniger als 1 Jahr = Rot)
-                const createdEl = document.getElementById('accountErstellt');
-                createdEl.innerText = data.accountCreated;
-                if (data.accountCreated !== "Unbekannt") {
-                    // Wir zerlegen "DD.MM.YYYY" um ein echtes Datum daraus zu machen
-                    const parts = data.accountCreated.split('.');
-                    const creationDate = new Date(parts[2], parts[1] - 1, parts[0]);
-                    
-                    // Datum von genau heute vor 1 Jahr berechnen
-                    const einJahrZurueck = new Date();
-                    einJahrZurueck.setFullYear(einJahrZurueck.getFullYear() - 1);
-                    
-                    // Ist der Account jünger als 1 Jahr?
-                    createdEl.style.color = (creationDate > einJahrZurueck) ? "#ff4d4d" : "#00e676";
-                } else {
-                    createdEl.style.color = "#ff4d4d"; // Privat/Unbekannt machen wir direkt Rot
-                }
-
-                // CS2 Gesamtzeit (< 500h = Rot)
-                const gesamtStundenEl = document.getElementById('gesamtStunden');
-                gesamtStundenEl.innerText = data.cs2TotalHours + " Std.";
-                gesamtStundenEl.style.color = (data.cs2TotalHours < 500) ? "#ff4d4d" : "#00e676";
-
-                // CS2 Letzte 2 Wochen (< 1h = Rot)
-                const wochenStundenEl = document.getElementById('wochenStunden');
-                wochenStundenEl.innerText = data.cs2RecentHours + " Std.";
-                wochenStundenEl.style.color = (data.cs2RecentHours < 1) ? "#ff4d4d" : "#00e676";
-
-                // Gebannte Freunde (Mindestens 1 Bann = Rot)
-                const bannedEl = document.getElementById('bannedFriends');
-                if (data.friendsVisible && data.totalFriends > 0) {
-                    bannedEl.innerText = `${data.bannedFriends} / ${data.totalFriends} (${data.bannedPercentage}%)`;
-                    // Sobald gebannte Freunde > 0 sind -> Rot, ansonsten Grün
-                    bannedEl.style.color = (data.bannedFriends > 0) ? "#ff4d4d" : "#00e676";
-                } else if (!data.friendsVisible) {
-                    bannedEl.innerText = "Privat";
-                    bannedEl.style.color = "#ff4d4d"; // Liste versteckt = Suspekt = Rot
-                } else {
-                    bannedEl.innerText = "0 Freunde";
-                    bannedEl.style.color = "#00e676"; // 0 Freunde = Niemand gebannt = Grün
-                }
-
-                // 3. Faceit-Daten eintragen (falls vorhanden)
-                if (data.hasFaceit) {
-                    document.getElementById('spielerLevel').innerText = data.faceit.level;
-                    document.getElementById('spielerElo').innerText = data.faceit.elo;
-                } else {
-                    document.getElementById('spielerLevel').innerText = "Kein Profil";
-                    document.getElementById('spielerElo').innerText = "Kein Profil";
-                }
-
-                // Kachel einblenden
-                kachel.style.display = 'block';
-
-            } catch (err) {
-                console.error(err);
-                alert("Verbindungsfehler zum Backend. Läuft dein Node-Server?");
-            }
-        }
-    // Lauscher für die Enter-Taste hinzufügen
-        document.getElementById('steamIdInput').addEventListener('keypress', function(event) {
-            // Prüfen, ob die gedrückte Taste "Enter" war
-            if (event.key === 'Enter') {
-                // Das Standardverhalten (z.B. Formular absenden) verhindern
-                event.preventDefault(); 
-                // Unsere Suchfunktion aufrufen
-                sucheSpieler();
-            }
-        });
-    </script>
+    <script src="script.js"></script>
 </body>
 </html>

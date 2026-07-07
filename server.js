@@ -169,7 +169,7 @@ app.get('/api/player-details/:userInput', async (req, res) => {
             nickname: faceitData.nickname,
             elo: faceitData.games.cs2?.faceit_elo || faceitData.games.csgo?.faceit_elo || "N/A",
             level: faceitData.games.cs2?.skill_level || faceitData.games.csgo?.skill_level || "N/A",
-            // Hinweis: Für K/D und Matches müssen wir später noch den Faceit-Stats-Endpunkt fragen
+            coverImage: faceitData.cover_image || null // <-- NEU: Der Profil-Banner
         } : null
     };
 
