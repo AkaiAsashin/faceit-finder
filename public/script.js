@@ -57,9 +57,9 @@ function baueKachel(data) {
     let accountAgeText = data.accountCreated;
     let accountAgeColor = "#ff4d4d";
     let totalHoursText = (data.cs2TotalHours === "Private") ? "Private" : data.cs2TotalHours + " hrs";
-    let totalHoursColor = (data.cs2TotalHours === "Private" || data.cs2TotalHours < 500) ? "#ff4d4d" : "#00e676";
+    let totalHoursColor = (data.cs2TotalHours === "Private" || data.cs2TotalHours < 1000) ? "#ff4d4d" : "#00e676";
     let recentHoursText = (data.cs2RecentHours === "Private") ? "Private" : data.cs2RecentHours + " hrs";
-    let recentHoursColor = (data.cs2RecentHours === "Private" || data.cs2RecentHours < 2) ? "#ff4d4d" : "#00e676";
+    let recentHoursColor = (data.cs2RecentHours === "Private" || data.cs2RecentHours < 10) ? "#ff4d4d" : "#00e676";
 
     // If account is private, overwrite everything with "Private" in red
     if (!isPublic) {
